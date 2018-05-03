@@ -6,7 +6,7 @@ VER_FROM_PESTLE=`php pestle_dev version`
 if [ "$VER_FROM_TAG" != "$VER_FROM_PESTLE" ]
 then
   echo "pestle version and latest tag do not match, bailing"
-  exit
+  #exit
 fi
 
 php -d phar.readonly=0 vendor/bin/phing package_phar

@@ -8,6 +8,8 @@ pestle_import('Pulsestorm\Magento2\Cli\Library\createClassFile');
 pestle_import('Pulsestorm\Pestle\Library\writeStringToFile');
 pestle_import('Pulsestorm\Xml_Library\formatXmlString');
 pestle_import('Pulsestorm\Magento2\Cli\Generate\Crud\Model\createDbIdFromModuleInfoAndModelShortName');
+pestle_import('Pulsestorm\Magento2\Cli\Generate\Crud\Model\getModelRepositoryName');
+pestle_import('Pulsestorm\Magento2\Cli\Generate\Crud\Model\getModelClassNameFromModuleInfo');
 
 function getModelShortName($modelClass)
 {
