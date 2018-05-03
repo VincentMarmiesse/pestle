@@ -47,9 +47,30 @@ function createControllerClassBodyForIndexRedirect($module_info, $modelClass, $a
 
 function createControllerClassBodyForDelete($module_info, $modelClass, $aclRule)
 {    
-    $dbID       = createDbIdFromModuleInfoAndModelShortName($module_info, getModelShortName($modelClass));    
+    $dbID       = createDbIdFromModuleInfoAndModelShortName($module_info, getModelShortName($modelClass));
+    $repositoryName     = getModelRepositoryName($modelClass);
+    $repositoryFullName = '\\' . getModelClassNameFromModuleInfo($module_info, $repositoryName);
     return '  
-    const ADMIN_RESOURCE = \''.$aclRule.'\';   
+    const ADMIN_RESOURCE = \''.$aclRule.'\';
+    
+    /**
+     * @var ' . $repositoryFullName . '
+     */
+    protected $objectRepository;
+
+    /**
+     * Delete constructor.
+     * @param ' . $repositoryFullName . ' $objectRepository
+     * @param \Magento\Backend\App\Action\Context $context
+     */
+    public function __construct(
+        ' . $repositoryFullName . ' $objectRepository,
+        \Magento\Backend\App\Action\Context $context
+    ) {
+        $this->objectRepository = $objectRepository;
+
+        parent::__construct($context);
+    }
           
     public function execute()
     {
@@ -58,12 +79,9 @@ function createControllerClassBodyForDelete($module_info, $modelClass, $aclRule)
         /** @var \Magento\Backend\Model\View\Result\Redirect $resultRedirect */
         $resultRedirect = $this->resultRedirectFactory->create();
         if ($id) {
-            $title = "";
             try {
-                // init model and delete
-                $model = $this->_objectManager->create(\''.$modelClass.'\');
-                $model->load($id);
-                $model->delete();
+                // delete model
+                $this->objectRepository->deleteById($id);
                 // display success message
                 $this->messageManager->addSuccess(__(\'You have deleted the object.\'));
                 // go to grid
@@ -89,6 +107,8 @@ function createControllerClassBodyForSave($module_info, $modelClass, $aclRule)
 {
     $dbID       = createDbIdFromModuleInfoAndModelShortName($module_info, getModelShortName($modelClass));
     $persistKey = getPersistKeyFromModelClassName($modelClass);
+    $repositoryName     = getModelRepositoryName($modelClass);
+    $repositoryFullName = '\\' . getModelClassNameFromModuleInfo($module_info, $repositoryName);
     return '
     /**
      * Authorization level of a basic admin session
@@ -101,16 +121,25 @@ function createControllerClassBodyForSave($module_info, $modelClass, $aclRule)
      * @var DataPersistorInterface
      */
     protected $dataPersistor;
+    
+    /**
+     * @var ' . $repositoryFullName . '
+     */
+    protected $modelRepository;
 
     /**
      * @param Action\Context $context
      * @param DataPersistorInterface $dataPersistor
+     * @param ' . $repositoryFullName . ' $modelRepository
      */
     public function __construct(
         Action\Context $context,
-        DataPersistorInterface $dataPersistor
+        DataPersistorInterface $dataPersistor,
+        ' . $repositoryFullName . ' $modelRepository
     ) {
-        $this->dataPersistor = $dataPersistor;
+        $this->dataPersistor    = $dataPersistor;
+        $this->modelRepository  = $modelRepository;
+        
         parent::__construct($context);
     }
 
@@ -133,18 +162,18 @@ function createControllerClassBodyForSave($module_info, $modelClass, $aclRule)
                 $data[\''.$dbID.'\'] = null;
             }
 
-            /** @var '.$modelClass.' $model */
+            /** @var \\'.$modelClass.' $model */
             $model = $this->_objectManager->create(\''.$modelClass.'\');
 
             $id = $this->getRequest()->getParam(\''.$dbID.'\');
             if ($id) {
-                $model->load($id);
+                $model = $this->modelRepository->getById($id);
             }
 
             $model->setData($data);
 
             try {
-                $model->save();
+                $this->modelRepository->save($model);
                 $this->messageManager->addSuccess(__(\'You saved the thing.\'));
                 $this->dataPersistor->clear(\''.$persistKey.'\');
                 if ($this->getRequest()->getParam(\'back\')) {
